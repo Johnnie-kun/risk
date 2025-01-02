@@ -22,4 +22,4 @@ export interface BinanceOrder {
   price: string
   quantity: string
   status: string
-}
+} 
