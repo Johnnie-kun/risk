@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs/index"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Send } from 'lucide-react'
@@ -26,7 +27,7 @@ export default function TradingInterface() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground dark">
+    <div className="flex flex-col h-full bg-background text-foreground dark">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-4">
@@ -42,35 +43,81 @@ export default function TradingInterface() {
         </ToggleGroup>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col justify-between p-4">
-        <ScrollArea className="flex-1 mb-4">
-          <div className="space-y-4">
-            {messages.map((message, index) => (
-              <div key={index} className={message.role === 'user' ? 'text-right' : 'text-left'}>
-                <p className={`inline-block max-w-[80%] rounded-lg px-4 py-2 ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-700 text-white'}`}>
-                  {message.content}
-                </p>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
+      {/* Main Content */}
+      <div className="flex flex-1 min-h-0 bg-gray-900">
+        {/* Order Book */}
+        <div className="w-[300px] border-r border-gray-700">
+          <Tabs defaultValue="order-book" className="h-full">
+            <TabsList className="w-full bg-gray-800">
+              <TabsTrigger value="order-book" className="flex-1 data-[state=active]:bg-gray-700">Order Book</TabsTrigger>
+              <TabsTrigger value="trades" className="flex-1 data-[state=active]:bg-gray-700">Trades</TabsTrigger>
+            </TabsList>
+            <TabsContent value="order-book" className="h-[calc(100%-40px)]">
+              <ScrollArea className="h-full">
+                <div className="grid grid-cols-3 text-sm p-2 text-gray-400">
+                  <div>Price(USDT)</div>
+                  <div>Size(USDT)</div>
+                  <div>Sum(USDT)</div>
+                </div>
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <div key={i} className="grid grid-cols-3 text-sm p-2 hover:bg-gray-700">
+                    <div className="text-red-400">74,993.9</div>
+                    <div className="text-gray-300">150.0</div>
+                    <div className="text-gray-300">578.94K</div>
+                  </div>
+                ))}
+              </ScrollArea>
+            </TabsContent>
+            <TabsContent value="trades" className="h-[calc(100%-40px)]">
+              <ScrollArea className="h-full">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <div key={i} className="flex justify-between text-sm p-2 hover:bg-gray-700">
+                    <span className="text-green-400">74,992.0</span>
+                    <span className="text-gray-300">0.5 BTC</span>
+                    <span className="text-gray-400">15:40:13</span>
+                  </div>
+                ))}
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
+        </div>
 
-        {/* Input field and send button */}
-        <div className="flex gap-2">
-          <Input 
-            type="text" 
-            placeholder="Type your message..." 
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            className="bg-[#2b2f36] text-white placeholder:text-gray-500 flex-1"
-          />
-          <Button 
-            onClick={handleSend} 
-            className="h-12 w-12 bg-blue-500 text-white flex items-center justify-center"
-          >
-            <Send className="h-5 w-5" />
-          </Button>
+        {/* Chart Area */}
+        <div className="flex-1 border-r border-gray-700 p-4">
+          <div className="h-full bg-gray-800 rounded-lg flex items-center justify-center text-gray-400">
+            Trading Chart Placeholder
+          </div>
+        </div>
+
+        {/* Chat Assistant */}
+        <div className="w-[300px] flex flex-col">
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4">
+              {messages.map((message, i) => (
+                <div key={i} className={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}>
+                  <div className={`max-w-[80%] rounded-lg p-2 ${
+                    message.role === 'assistant' ? 'bg-gray-700 text-gray-300' : 'bg-blue-600 text-white'
+                  }`}>
+                    {message.content}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <div className="p-4 border-t border-gray-700">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Ask about trading..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
+              />
+              <Button onClick={handleSend} className="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 p-0">
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

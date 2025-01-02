@@ -1,17 +1,25 @@
-import React from 'react';
+"use client"
 
-export const ToggleGroup = React.forwardRef<HTMLDivElement, React.HTMLProps<HTMLDivElement>>(
-  (props, ref) => {
-    return (
-      <div ref={ref} {...props}>
-        {props.children}
-      </div>
-    );
-  }
-);
+import * as React from "react"
+import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
+import { cn } from "@/lib/utils"
 
-ToggleGroup.displayName = "ToggleGroup";
+const ToggleGroup = React.forwardRef<
+  React.ElementRef<typeof ToggleGroupPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root>
+>(({ className, ...props }, ref) => (
+  <ToggleGroupPrimitive.Root
+    ref={ref}
+    className={cn(
+      "inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground",
+      className
+    )}
+    {...props}
+  />
+))
 
-export default ToggleGroup;
+ToggleGroup.displayName = ToggleGroupPrimitive.Root.displayName
+
+export { ToggleGroup }
 
 // ... other code or exports if necessary ...

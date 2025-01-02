@@ -1,22 +1,21 @@
+'use client'
+
 import React from "react"
 import Navigation from "./components/navigation"
-import RiskAlerts from "./components/risk-alerts"
-import PriceChart from "./components/price-chart"
-import TradingInterface from "./page" // Importing the TradingInterface
+import { ReactNode } from "react"
 
-const Layout: React.FC = ({ children }) => {
+interface LayoutProps {
+  children: ReactNode
+}
+
+const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-background text-foreground">
       <Navigation />
-      <div className="flex flex-1">
-        <div className="flex-1 p-4">
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex-1 p-4 overflow-y-auto">
           {/* Main content area for TradingInterface */}
           {children}
-        </div>
-        <div className="w-1/3 p-4">
-          {/* Sidebar for Risk Alerts and Price Chart */}
-          <RiskAlerts />
-          <PriceChart />
         </div>
       </div>
     </div>

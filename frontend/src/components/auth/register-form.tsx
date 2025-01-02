@@ -17,7 +17,7 @@ export default function RegisterForm() {
               </div>
               <span className="text-[#0066FF] font-bold text-2xl">RISK</span>
             </div>
-            <Button variant="ghost" size="icon" className="text-gray-400">
+            <Button variant="ghost" size="sm" className="text-gray-400" aria-label="Scan QR Code">
               <QrCode className="h-5 w-5" />
             </Button>
           </div>
@@ -35,6 +35,7 @@ export default function RegisterForm() {
                 placeholder="Email/Phone (without country code)"
                 className="bg-[#2b2f36] border-gray-700 text-white placeholder:text-gray-500"
                 required
+                aria-label="Email or Phone"
               />
             </div>
 
@@ -48,6 +49,7 @@ export default function RegisterForm() {
                 placeholder="Create a password"
                 className="bg-[#2b2f36] border-gray-700 text-white placeholder:text-gray-500"
                 required
+                aria-label="Password"
               />
             </div>
 
@@ -55,7 +57,7 @@ export default function RegisterForm() {
               Register
             </Button>
 
-            <div className="text-center">
+            <div className="text-center mt-4">
               <a href="#" className="text-[#0066FF] hover:text-[#0052CC] text-sm">
                 Already have an account? Log in
               </a>
