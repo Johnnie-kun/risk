@@ -1,16 +1,10 @@
-from flask import Flask, jsonify, request
-from dotenv import load_dotenv
-import os
-
-# Load environment variables
-load_dotenv()
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
-# Configuration
-app.config['DEBUG'] = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-
-@app.route('/health')
+@app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'ok'})
 
@@ -18,18 +12,10 @@ def health_check():
 def predict():
     try:
         data = request.get_json()
-        # TODO: Implement prediction logic
-        return jsonify({
-            'prediction': 0,
-            'confidence': 0,
-            'message': 'Prediction endpoint placeholder'
-        })
+        # ML prediction logic will be added here later
+        return jsonify({'message': 'Prediction endpoint placeholder'})
     except Exception as e:
-        return jsonify({
-            'error': str(e),
-            'message': 'Internal server error'
-        }), 500
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=5001)
