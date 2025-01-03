@@ -1,23 +1,51 @@
 {
-  "name": "bitcoin-predictor-backend",
-  "version": "1.0.0",
-  "description": "Backend for Bitcoin Price Prediction Website",
-  "main": "src/app.js",
-  "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
-    "test": "jest"
-  },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.0.3",
-    "express": "^4.18.2",
-    "express-rate-limit": "^6.7.0",
-    "helmet": "^7.0.0",
-    "morgan": "^1.10.0"
-  },
-  "devDependencies": {
-    "jest": "^29.5.0",
-    "nodemon": "^2.0.22"
-  }
+    "name": "risk-backend",
+    "version": "1.0.0",
+    "description": "Backend for Risk Website",
+    "main": "src/app.js",
+    "scripts": {
+      "start": "node src/app.js",
+      "dev": "nodemon src/app.js",
+      "test": "jest",
+      "test:watch": "jest --watch", 
+      "lint": "eslint .",
+      "lint:fix": "eslint --fix .", 
+      "format": "prettier --write ."
+    },
+    "dependencies": {
+      "cors": "^2.8.5", 
+      "dotenv": "^16.0.3", 
+      "express": "^4.18.2", 
+      "express-rate-limit": "^6.7.0", 
+      "helmet": "^7.0.0", 
+      "morgan": "^1.10.0", 
+      "pg": "^8.10.0", 
+      "pg-hstore": "^2.3.4", 
+      "sequelize": "^6.32.1" 
+    },
+    "devDependencies": {
+      "jest": "^29.5.0", 
+      "nodemon": "^2.0.22", 
+      "eslint": "^8.50.0",
+      "prettier": "^3.0.0"
+    },
+    "jest": {
+      "testEnvironment": "node" 
+    },
+    "eslintConfig": {
+      "extends": ["eslint:recommended", "prettier"], 
+      "parserOptions": {
+        "ecmaVersion": 2021 
+      },
+      "env": {
+        "node": true, 
+        "jest": true 
+      }
+    },
+    "prettier": {
+      "semi": true, 
+      "singleQuote": false, 
+      "trailingComma": "es5", 
+      "printWidth": 80 
+    }
 }
