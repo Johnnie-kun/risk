@@ -10,7 +10,8 @@
       "test:watch": "jest --watch", 
       "lint": "eslint .",
       "lint:fix": "eslint --fix .", 
-      "format": "prettier --write ."
+      "format": "prettier --write .",
+      "build": "echo 'No build step needed for Node.js backend'"
     },
     "dependencies": {
       "cors": "^2.8.5", 
