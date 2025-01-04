@@ -11,6 +11,7 @@ import { Send } from 'lucide-react'
 export default function TradingInterface() {
   const [messages, setMessages] = React.useState<{ role: 'user' | 'assistant'; content: string }[]>([])
   const [input, setInput] = React.useState('')
+  const [tradeType, setTradeType] = React.useState('futures')
 
   const handleSend = () => {
     if (!input.trim()) return
@@ -37,10 +38,14 @@ export default function TradingInterface() {
             <span className="text-green-400">+0.89%</span>
           </div>
         </div>
-        <ToggleGroup type="single" defaultValue="futures" className="bg-gray-700 rounded-md">
-          <ToggleGroupItem value="futures" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">Futures</ToggleGroupItem>
-          <ToggleGroupItem value="spot" className="data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">Spot</ToggleGroupItem>
-        </ToggleGroup>
+        <div className="w-[200px]">
+          <Tabs value={tradeType} onValueChange={(value) => setTradeType(value)} className="w-full">
+            <TabsList className="w-full bg-gray-800">
+              <TabsTrigger value="futures" className="flex-1 data-[state=active]:bg-gray-700">Futures</TabsTrigger>
+              <TabsTrigger value="spot" className="flex-1 data-[state=active]:bg-gray-700">Spot</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {/* Main Content */}

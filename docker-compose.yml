@@ -20,12 +20,15 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "5001:5000"
     volumes:
       - ./backend:/app
       - /app/node_modules
     environment:
       - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=xGEt2+qAhEXCEzWOExPYFTRSI4oezCi8JFck8AykIf0=
     depends_on:
       - postgres
       - redis
@@ -40,6 +43,7 @@ services:
       - ./ml-service:/app
     environment:
       - PYTHON_ENV=development
+      - FLASK_APP=src/app.py
 
   postgres:
     image: postgres:14

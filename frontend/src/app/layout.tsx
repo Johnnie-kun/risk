@@ -1,15 +1,21 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { GeistSans, GeistMono } from "geist/font";
 import "./globals.css";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "@/utils/queryConfig";
+import { QueryProvider } from "@/components/providers/query-provider";
+
+// Viewport configuration
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1.0,
+};
+
+// Theme color configuration
+export const themeColor = "#ffffff";
 
 // Default metadata for SEO
 export const metadata: Metadata = {
   title: "Bitcoin Predictor App",
   description: "Predict Bitcoin prices with real-time data and advanced analytics.",
-  viewport: "width=device-width, initial-scale=1.0",
-  themeColor: "#ffffff",
   openGraph: {
     title: "Bitcoin Predictor App",
     description: "Predict Bitcoin prices with real-time data and advanced analytics.",
@@ -39,12 +45,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
-      <body className="antialiased bg-gray-100 text-gray-900">
-        {/* QueryClientProvider enables React Query throughout the app */}
-        <QueryClientProvider client={queryClient}>
-          {/* Error Boundary can be wrapped here for fallback UI */}
+      <body className="antialiased bg-gray-900 text-gray-100">
+        <QueryProvider>
           {children}
-        </QueryClientProvider>
+        </QueryProvider>
       </body>
     </html>
   );
