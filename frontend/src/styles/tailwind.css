@@ -2,4 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Additional custom styles can be added here */
+/* Custom Styles */
+
+/* Example: Custom Background Color for the Body */
+body {
+  background-color: #1a1b1e;
+  color: #e0e0e0;
+}
+
+/* Example: Custom Button Style */
+.btn-custom {
+  @apply bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors;
+}
+
+.btn-custom:hover {
+  @apply bg-blue-700;
+}
+
+/* Example: Custom Font for Headings */
+h1 {
+  @apply text-4xl font-semibold text-gray-100;
+}
+
+h2 {
+  @apply text-3xl font-semibold text-gray-100;
+}
+
+h3 {
+  @apply text-2xl font-semibold text-gray-100;
+}
+
+/* Example: Add Custom Animation */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 2s ease-in-out;
+}
+
+/* Example: Custom Input Style */
+.input-custom {
+  @apply bg-gray-700 text-white placeholder-gray-400 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
+
+/* Example: Custom Card Style */
+.card-custom {
+  @apply bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700;
+}
+
+/* Example: Custom Link Style */
+.link-custom {
+  @apply text-blue-500 hover:text-blue-400 transition-colors;
+}
