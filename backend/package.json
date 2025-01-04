@@ -4,49 +4,59 @@
     "description": "Backend for Risk Website",
     "main": "src/app.js",
     "scripts": {
-      "start": "node src/app.js",
-      "dev": "nodemon src/app.js",
-      "test": "jest",
-      "test:watch": "jest --watch", 
-      "lint": "eslint .",
-      "lint:fix": "eslint --fix .", 
-      "format": "prettier --write .",
-      "build": "echo 'No build step needed for Node.js backend'"
+        "start": "node dist/index.js",
+        "dev": "nodemon --exec ts-node src/index.ts",
+        "build": "tsc",
+        "test": "jest"
     },
     "dependencies": {
-      "cors": "^2.8.5", 
-      "dotenv": "^16.0.3", 
-      "express": "^4.18.2", 
-      "express-rate-limit": "^6.7.0", 
-      "helmet": "^7.0.0", 
-      "morgan": "^1.10.0", 
-      "pg": "^8.10.0", 
-      "pg-hstore": "^2.3.4", 
-      "sequelize": "^6.32.1" 
+        "bcrypt": "^5.1.1",
+        "cors": "^2.8.5",
+        "express": "^4.21.2",
+        "express-rate-limit": "^6.7.0",
+        "helmet": "^7.0.0",
+        "jsonwebtoken": "^9.0.2",
+        "morgan": "^1.10.0",
+        "nodemailer": "^6.9.16",
+        "pg": "^8.10.0",
+        "pg-hstore": "^2.3.4",
+        "redis": "^4.7.0",
+        "sequelize": "^6.32.1"
     },
     "devDependencies": {
-      "jest": "^29.5.0", 
-      "nodemon": "^2.0.22", 
-      "eslint": "^8.50.0",
-      "prettier": "^3.0.0"
+        "@types/bcrypt": "^5.0.2",
+        "@types/express": "^5.0.0",
+        "@types/jsonwebtoken": "^9.0.7",
+        "@types/nodemailer": "^6.4.17",
+        "@types/redis": "^4.0.10",
+        "dotenv": "^16.4.7",
+        "eslint": "^8.50.0",
+        "jest": "^29.5.0",
+        "nodemon": "^2.0.22",
+        "prettier": "^3.0.0",
+        "ts-node": "^10.9.2",
+        "typescript": "^5.7.2"
     },
     "jest": {
-      "testEnvironment": "node" 
+        "testEnvironment": "node"
     },
     "eslintConfig": {
-      "extends": ["eslint:recommended", "prettier"], 
-      "parserOptions": {
-        "ecmaVersion": 2021 
-      },
-      "env": {
-        "node": true, 
-        "jest": true 
-      }
+        "extends": [
+            "eslint:recommended",
+            "prettier"
+        ],
+        "parserOptions": {
+            "ecmaVersion": 2021
+        },
+        "env": {
+            "node": true,
+            "jest": true
+        }
     },
     "prettier": {
-      "semi": true, 
-      "singleQuote": false, 
-      "trailingComma": "es5", 
-      "printWidth": 80 
+        "semi": true,
+        "singleQuote": false,
+        "trailingComma": "es5",
+        "printWidth": 80
     }
 }
