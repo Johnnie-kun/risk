@@ -5,6 +5,10 @@ import { redisService } from './services/redis.service';
 // Load environment variables
 dotenv.config();
 
+// Add these lines to log the Redis host and port
+console.log('REDIS_HOST:', process.env.REDIS_HOST);
+console.log('REDIS_PORT:', process.env.REDIS_PORT);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 

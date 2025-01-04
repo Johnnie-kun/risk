@@ -3,12 +3,7 @@ import { REDIS_CONFIG } from '../config/redis.config';
 
 // Create a Redis client
 const redisClient: RedisClientType = createClient({
-  socket: {
-    host: REDIS_CONFIG.host,
-    port: REDIS_CONFIG.port,
-    tls: REDIS_CONFIG.tls ? true : undefined,
-  },
-  password: REDIS_CONFIG.password,
+  url: `redis://${REDIS_CONFIG.password ? `:${REDIS_CONFIG.password}@` : ''}${REDIS_CONFIG.host}:${REDIS_CONFIG.port}`,
   database: REDIS_CONFIG.db,
 });
 

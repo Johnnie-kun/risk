@@ -21,7 +21,7 @@ export interface RedisConfig {
    */
   export const REDIS_CONFIG: RedisConfig = {
     host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6380', 10),
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
     password: process.env.REDIS_PASSWORD || undefined, // Optional, if password is provided
     db: parseInt(process.env.REDIS_DB || '0', 10), // Default to database 0
     tls: process.env.REDIS_TLS_ENABLED === 'true' ? {
