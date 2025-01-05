@@ -93,4 +93,22 @@ export const redisService = {
       console.error('Error closing Redis connection:', error);
     }
   },
+
+  /**
+   * Pings the Redis server.
+   * @returns {Promise<string>} The response from the Redis server.
+   * @throws {Error} If the operation fails.
+   */
+  async ping(): Promise<string> {
+    try {
+      const response = await redisClient.ping();
+      console.log('Redis server pinged successfully');
+      return response;
+    } catch (error) {
+      console.error('Error pinging Redis server:', error);
+      throw new Error('Failed to ping Redis server');
+    }
+  },
+
+  client: redisClient,
 };

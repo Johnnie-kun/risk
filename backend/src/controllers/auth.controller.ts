@@ -35,25 +35,25 @@ export const authController = {
       await redisService.set(`verify_${email}`, verificationToken, 24 * 60 * 60);
 
       // Send verification email
-      await emailService.sendEmail(
-        email,
-        'Verify Your Email',
-        `
+      await emailService.sendEmail({
+        to: email, // Recipient email
+        subject: 'Verify Your Email', // Email subject
+        html: `
           <h1>Welcome to Bitcoin Predictor</h1>
           <p>Please click the link below to verify your email:</p>
           <a href="${process.env.FRONTEND_URL}/verify?token=${verificationToken}">
             Verify Email
           </a>
-        `
-      );
+        ` // Email body
+      });
 
       // Save user in the database
-      const user = await userService.create({ email, password: hashedPassword, name });
+      await userService.create({ email, password: hashedPassword, name });
 
-      res.status(201).json({ message: 'Registration successful. Please verify your email.' });
+      return res.status(201).json({ message: 'Registration successful. Please verify your email.' });
     } catch (error) {
       console.error('Registration error:', error.message);
-      res.status(500).json({ error: 'An unexpected error occurred during registration' });
+      return res.status(500).json({ error: 'An unexpected error occurred during registration' });
     }
   },
 
@@ -94,10 +94,10 @@ export const authController = {
       // Store refresh token in Redis with a 7-day expiration
       await redisService.set(`refresh_${user.id}`, refreshToken, 7 * 24 * 60 * 60);
 
-      res.json({ accessToken, refreshToken });
+      return res.json({ accessToken, refreshToken });
     } catch (error) {
       console.error('Login error:', error.message);
-      res.status(500).json({ error: 'An unexpected error occurred during login' });
+      return res.status(500).json({ error: 'An unexpected error occurred during login' });
     }
   },
 
@@ -120,21 +120,29 @@ export const authController = {
       }
 
       // Check if the token matches the one stored in Redis
-      const storedToken = await redisService.get(`verify_${decoded.email}`);
-      if (!storedToken || storedToken !== token) {
-        return res.status(400).json({ error: 'Invalid or expired verification token' });
+      if (typeof decoded === 'object' && decoded !== null && 'email' in decoded) {
+        const storedToken = await redisService.get(`verify_${decoded.email}`);
+        if (!storedToken || storedToken !== token) {
+          return res.status(400).json({ error: 'Invalid or expired verification token' });
+        }
+      } else {
+        return res.status(400).json({ error: 'Invalid token structure' });
       }
 
       // Mark user as verified in the database
-      await userService.verifyEmail(decoded.email);
+      if (typeof decoded === 'object' && decoded !== null && 'email' in decoded) {
+        await userService.verifyEmail(decoded.email);
+      } else {
+        return res.status(400).json({ error: 'Invalid token structure' });
+      }
 
       // Remove verification token from Redis
       await redisService.delete(`verify_${decoded.email}`);
 
-      res.json({ message: 'Email verified successfully' });
+      return res.json({ message: 'Email verified successfully' });
     } catch (error) {
       console.error('Email verification error:', error.message);
-      res.status(500).json({ error: 'An unexpected error occurred during email verification' });
+      return res.status(500).json({ error: 'An unexpected error occurred during email verification' });
     }
   },
 
@@ -157,18 +165,22 @@ export const authController = {
       }
 
       // Check if the refresh token matches the one stored in Redis
-      const storedToken = await redisService.get(`refresh_${decoded.userId}`);
-      if (!storedToken || storedToken !== refreshToken) {
+      if (typeof decoded === 'object' && decoded !== null && 'userId' in decoded) {
+        const storedToken = await redisService.get(`refresh_${decoded.userId}`);
+        if (!storedToken || storedToken !== refreshToken) {
+          return res.status(401).json({ error: 'Invalid or expired refresh token' });
+        }
+      } else {
         return res.status(401).json({ error: 'Invalid or expired refresh token' });
       }
 
       // Generate a new access token
       const accessToken = jwtUtils.generateAccessToken({ userId: decoded.userId });
 
-      res.json({ accessToken });
+      return res.json({ accessToken });
     } catch (error) {
       console.error('Token refresh error:', error.message);
-      res.status(500).json({ error: 'An unexpected error occurred during token refresh' });
+      return res.status(500).json({ error: 'An unexpected error occurred during token refresh' });
     }
   },
 };

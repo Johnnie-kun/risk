@@ -45,7 +45,7 @@ export const authMiddleware = async (
     }
 
     // Attach decoded user information to the request
-    req.user = decoded;
+    req.user = decoded as Record<string, any>;
 
     // Proceed to the next middleware or route handler
     next();
