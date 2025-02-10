@@ -19,9 +19,15 @@ const registerLimiter = createRateLimiter({
   message: 'Too many registration attempts, please try again later',
 });
 
-const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>): RequestHandler => 
-  (req, res, next): void => {
-    fn(req, res, next).catch(next);
+type AsyncRequestHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => Promise<void>;
+
+const asyncHandler = (fn: AsyncRequestHandler): RequestHandler => 
+  (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
   };
 
 // Routes
@@ -33,9 +39,11 @@ const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => P
  */
 router.post(
   '/register',
-  registerLimiter,
-  validate(registerSchema), // Optional: Add validation middleware
-  asyncHandler(authController.register)
+  registerLimiter as RequestHandler,
+  validate(registerSchema),
+  asyncHandler(async (req, res) => {
+    await authController.register(req, res);
+  })
 );
 
 /**
@@ -45,9 +53,11 @@ router.post(
  */
 router.post(
   '/login',
-  loginLimiter,
-  validate(loginSchema), // Optional: Add validation middleware
-  asyncHandler(authController.login)
+  loginLimiter as RequestHandler,
+  validate(loginSchema),
+  asyncHandler(async (req, res) => {
+    await authController.login(req, res);
+  })
 );
 
 /**
@@ -55,13 +65,17 @@ router.post(
  * @desc Verify email address using token
  * @access Public
  */
-router.get('/verify-email', asyncHandler(authController.verifyEmail));
+router.get('/verify-email', asyncHandler(async (req, res) => {
+  await authController.verifyEmail(req, res);
+}));
 
 /**
  * @route POST /refresh-token
  * @desc Refresh access token using a valid refresh token
  * @access Public
  */
-router.post('/refresh-token', asyncHandler(authController.refreshToken));
+router.post('/refresh-token', asyncHandler(async (req, res) => {
+  await authController.refreshToken(req, res);
+}));
 
 export default router;

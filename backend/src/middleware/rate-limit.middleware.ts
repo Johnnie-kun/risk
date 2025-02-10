@@ -2,6 +2,14 @@ import rateLimit from 'express-rate-limit';
 import { redisService } from '../services/redis.service';
 import { RateLimitRequestHandler } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
+import { Request } from 'express';
+
+// Extend the Request interface to include rateLimit
+interface RateLimitRequest extends Request {
+  rateLimit?: {
+    resetTime?: number; // Add resetTime property
+  };
+}
 
 /**
  * Creates a rate limiter middleware using Redis as the store.
@@ -44,7 +52,7 @@ export const createRateLimiter = (options?: {
     message,
     standardHeaders: true, // Include `RateLimit-*` headers in the response
     legacyHeaders: false, // Disable `X-RateLimit-*` headers
-    handler: (req, res) => {
+    handler: (req: RateLimitRequest, res) => {
       // Custom handler for rate-limited requests
       res.status(429).json({
         error: message,

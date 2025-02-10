@@ -53,12 +53,18 @@ export const authMiddleware = async (
     console.error('Error in authMiddleware:', error);
 
     // Handle specific JWT errors
-    if (error.name === 'JsonWebTokenError') {
+    if ((error as Error).name === 'JsonWebTokenError') {
       res.status(401).json({ error: 'Invalid token' });
-    } else if (error.name === 'TokenExpiredError') {
+    } else if ((error as Error).name === 'TokenExpiredError') {
       res.status(401).json({ error: 'Token expired' });
     } else {
       res.status(500).json({ error: 'An unexpected error occurred' });
     }
   }
+};
+
+export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+  // Implement your authentication logic here
+  // For example, you could call the authMiddleware here
+  authMiddleware(req, res, next); // Call authMiddleware to handle authentication
 };

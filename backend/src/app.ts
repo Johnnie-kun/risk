@@ -70,10 +70,10 @@ app.use('/api/chat', chatRoutes);
 // Sample PostgreSQL Route
 app.get("/data", async (_req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM your_table_name LIMIT 10"); // Replace with your table
+    const result = await pool.query("SELECT * FROM actual_table_name LIMIT 10"); // Replace with your table
     res.status(200).json(result.rows);
   } catch (error) {
-    console.error("❌ Error fetching data:", error.message);
+    console.error("❌ Error fetching data:", (error as Error).message);
     res.status(500).json({ error: "Failed to fetch data" });
   }
 });

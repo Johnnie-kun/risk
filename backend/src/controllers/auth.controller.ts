@@ -52,7 +52,7 @@ export const authController = {
 
       return res.status(201).json({ message: 'Registration successful. Please verify your email.' });
     } catch (error) {
-      console.error('Registration error:', error.message);
+      console.error('Registration error:', (error as Error).message);
       return res.status(500).json({ error: 'An unexpected error occurred during registration' });
     }
   },
@@ -96,7 +96,7 @@ export const authController = {
 
       return res.json({ accessToken, refreshToken });
     } catch (error) {
-      console.error('Login error:', error.message);
+      console.error('Login error:', (error as Error).message);
       return res.status(500).json({ error: 'An unexpected error occurred during login' });
     }
   },
@@ -141,7 +141,7 @@ export const authController = {
 
       return res.json({ message: 'Email verified successfully' });
     } catch (error) {
-      console.error('Email verification error:', error.message);
+      console.error('Email verification error:', (error as Error).message);
       return res.status(500).json({ error: 'An unexpected error occurred during email verification' });
     }
   },
@@ -179,7 +179,7 @@ export const authController = {
 
       return res.json({ accessToken });
     } catch (error) {
-      console.error('Token refresh error:', error.message);
+      console.error('Token refresh error:', (error as Error).message);
       return res.status(500).json({ error: 'An unexpected error occurred during token refresh' });
     }
   },

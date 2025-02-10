@@ -41,7 +41,7 @@ export const emailService = {
       console.log('Email sent successfully:', info.response);
       return true;
     } catch (error) {
-      console.error('Email sending failed:', error.message);
+      console.error('Email sending failed:', (error as Error).message);
       return false;
     }
   },
