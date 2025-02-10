@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
 import { authController } from '../controllers/auth.controller';
 import { createRateLimiter } from '../middleware/rate-limit.middleware';
 import { validate } from '../middleware/validate.middleware'; // Optional: Add validation middleware
@@ -19,6 +19,11 @@ const registerLimiter = createRateLimiter({
   message: 'Too many registration attempts, please try again later',
 });
 
+const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>): RequestHandler => 
+  (req, res, next): void => {
+    fn(req, res, next).catch(next);
+  };
+
 // Routes
 
 /**
@@ -30,7 +35,7 @@ router.post(
   '/register',
   registerLimiter,
   validate(registerSchema), // Optional: Add validation middleware
-  authController.register
+  asyncHandler(authController.register)
 );
 
 /**
@@ -42,7 +47,7 @@ router.post(
   '/login',
   loginLimiter,
   validate(loginSchema), // Optional: Add validation middleware
-  authController.login
+  asyncHandler(authController.login)
 );
 
 /**
@@ -50,13 +55,13 @@ router.post(
  * @desc Verify email address using token
  * @access Public
  */
-router.get('/verify-email', authController.verifyEmail);
+router.get('/verify-email', asyncHandler(authController.verifyEmail));
 
 /**
  * @route POST /refresh-token
  * @desc Refresh access token using a valid refresh token
  * @access Public
  */
-router.post('/refresh-token', authController.refreshToken);
+router.post('/refresh-token', asyncHandler(authController.refreshToken));
 
 export default router;

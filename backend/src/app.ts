@@ -16,21 +16,14 @@ const PORT = process.env.PORT || 3000;
 
 // PostgreSQL Database Connection
 const pool = new Pool({
-  host: process.env.POSTGRES_HOST,
-  port: Number(process.env.POSTGRES_PORT),
-  database: process.env.POSTGRES_DB,
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
 // Test PostgreSQL connection
-pool.connect((err) => {
-  if (err) {
-    console.error("Error connecting to PostgreSQL:", err.stack);
-  } else {
-    console.log("Connected to PostgreSQL");
-  }
-});
+pool.connect()
+  .then(() => console.log("Connected to PostgreSQL"))
+  .catch((err) => console.error("Error connecting to PostgreSQL:", err.stack));
 
 // Middleware
 app.use(helmet());
@@ -73,17 +66,26 @@ app.get("/data", async (_req, res) => {
   }
 });
 
-// Error handling middleware
-app.use((err: Error, _req: Request, res: Response) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something broke!' });
-});
-
 // Start server
-const server = app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  connectToRedis();
-});
+let server: ReturnType<typeof app.listen>;
+
+const startServer = async () => {
+  try {
+    // Connect to Redis first
+    await connectToRedis();
+    console.log(`Connected to Redis at ${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`);
+    
+    // Then start the server
+    server = app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 // Redis Connection
 const connectToRedis = async (retries = 5, delay = 5000): Promise<void> => {
@@ -110,6 +112,13 @@ process.on('SIGTERM', async () => {
     console.log('HTTP server closed');
     process.exit(0);
   });
+});
+
+// Error handling middleware
+app.use((err: Error, _req: Request, res: Response, next: Function) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something broke!' });
+  next(err);
 });
 
 export default app;
