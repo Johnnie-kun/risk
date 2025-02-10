@@ -8,7 +8,9 @@
     "build": "cd frontend && npm run build && cd ../backend && npm run build"
   },
   "dependencies": {
-    "concurrently": "^8.2.2"
+    "axios": "^1.7.9",
+    "concurrently": "^8.2.2",
+    "openai": "^4.83.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
