@@ -1,53 +1,24 @@
-import type { AuthResponse } from "./types"
-
-interface ApiResponse {
-  userId: string
-  username: string
-  email: string
-  token: string
-  expiresIn: number
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  full_name?: string;
+  is_active: boolean;
 }
 
-// Simulating a login function
-const login = async (username: string, password: string): Promise<AuthResponse> => {
-  try {
-    // Replace with actual login logic (e.g., API call)
-    const response = await fakeApiCall(username, password) // Example fake API call
-
-    // Return response structured according to AuthResponse interface
-    return {
-      user: {
-        id: response.userId,
-        username: response.username,
-        email: response.email,
-        token: response.token,
-      },
-      expiresIn: response.expiresIn, // Token expiration time
-    }
-  } catch (error) {
-    console.error("Login error:", error)
-    throw new Error("Failed to log in. Please check your credentials.")
-  }
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
 }
 
-// Example fake API call function (for demonstration purposes)
-const fakeApiCall = (username: string, password: string): Promise<ApiResponse> => {
-  // Simulate a successful login response
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (username === "test" && password === "password") {
-        resolve({
-          userId: "123",
-          username: username,
-          email: `${username}@example.com`,
-          token: "abcd1234", // Simulated token
-          expiresIn: 3600, // Token expires in 1 hour (3600 seconds)
-        })
-      } else {
-        reject(new Error("Invalid username or password"))
-      }
-    }, 1000)
-  })
+export interface LoginCredentials {
+  username: string;
+  password: string;
 }
 
-export { login }
+export interface RegisterCredentials {
+  username: string;
+  email: string;
+  password: string;
+  full_name?: string;
+}

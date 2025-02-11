@@ -3,30 +3,37 @@
 import * as React from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs/index"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Send } from 'lucide-react'
 import { webSocketService } from '@/services/websocket.service'
 import { chatService, ChatMessage } from '@/services/chat.service'
+import PriceChart from './components/price-chart'
+import TradingForm from './components/trading-form'
+import PositionsOrders from './components/positions-orders'
+import { tradingService, OrderBook, HistoricalData } from '@/services/tradingService'
 
 interface OrderBookEntry {
-  price: number;
-  size: number;
-  total: number;
+  price: number
+  size: number
+  total: number
 }
 
 interface Trade {
-  price: number;
-  amount: number;
-  side: 'buy' | 'sell';
-  timestamp: number;
+  price: number
+  amount: number
+  side: 'buy' | 'sell'
+  timestamp: number
 }
+
+const SYMBOL = 'BTCUSDT'
+const TIMEFRAMES = ['1m', '5m', '15m', '1h', '4h', '1d'] as const
+type Timeframe = typeof TIMEFRAMES[number]
 
 export default function TradingInterface() {
   const [messages, setMessages] = React.useState<ChatMessage[]>([])
   const [input, setInput] = React.useState('')
-  const [tradeType, setTradeType] = React.useState('futures')
   const [currentPrice, setCurrentPrice] = React.useState<number>(0)
   const [orderBook, setOrderBook] = React.useState<{ bids: OrderBookEntry[], asks: OrderBookEntry[] }>({
     bids: [],
@@ -34,69 +41,97 @@ export default function TradingInterface() {
   })
   const [trades, setTrades] = React.useState<Trade[]>([])
   const [isLoading, setIsLoading] = React.useState(false)
+  const [selectedTimeframe, setSelectedTimeframe] = React.useState<Timeframe>('1h')
+  const [chartData, setChartData] = React.useState<HistoricalData[]>([])
   const scrollRef = React.useRef<HTMLDivElement>(null)
 
-  React.useEffect(() => {
-    webSocketService.connect();
+  // Fetch historical data
+  const fetchHistoricalData = React.useCallback(async () => {
+    try {
+      const data = await tradingService.getHistoricalData(SYMBOL, selectedTimeframe)
+      setChartData(data)
+    } catch (error) {
+      console.error('Failed to fetch historical data:', error)
+    }
+  }, [selectedTimeframe])
 
-    const handlePriceUpdate = (data: { price: number }) => setCurrentPrice(data.price);
-    const handleOrderBookUpdate = (data: { bids: Array<[number, number]>; asks: Array<[number, number]> }) => {
-      // Convert raw order book data to OrderBookEntry format
+  React.useEffect(() => {
+    fetchHistoricalData()
+  }, [fetchHistoricalData])
+
+  React.useEffect(() => {
+    webSocketService.connect()
+
+    const handlePriceUpdate = (data: { price: number }) => setCurrentPrice(data.price)
+    const handleOrderBookUpdate = (data: { bids: Array<[number, number]>, asks: Array<[number, number]> }) => {
       const processOrders = (orders: Array<[number, number]>): OrderBookEntry[] => {
-        let total = 0;
+        let total = 0
         return orders.map(([price, size]) => {
-          total += size;
-          return { price, size, total };
-        });
-      };
+          total += size
+          return { price, size, total }
+        })
+      }
 
       setOrderBook({
         bids: processOrders(data.bids),
         asks: processOrders(data.asks)
-      });
-    };
-    const handleTradeUpdate = (data: Trade) => setTrades(prev => [data, ...prev].slice(0, 50));
+      })
+    }
+    const handleTradeUpdate = (data: Trade) => setTrades(prev => [data, ...prev].slice(0, 50))
+    const handleChartUpdate = (data: HistoricalData) => {
+      setChartData(prev => {
+        const newData = [...prev]
+        const lastIndex = newData.length - 1
+        if (newData[lastIndex]?.time === data.time) {
+          newData[lastIndex] = data
+        } else {
+          newData.push(data)
+        }
+        return newData
+      })
+    }
 
-    webSocketService.subscribeToPriceUpdates(handlePriceUpdate);
-    webSocketService.subscribeToOrderBookUpdates(handleOrderBookUpdate);
-    webSocketService.subscribeToTradeUpdates(handleTradeUpdate);
+    webSocketService.subscribeToPriceUpdates(handlePriceUpdate)
+    webSocketService.subscribeToOrderBookUpdates(handleOrderBookUpdate)
+    webSocketService.subscribeToTradeUpdates(handleTradeUpdate)
+    webSocketService.subscribeToChartData(handleChartUpdate)
 
-    // Cleanup on unmount
     return () => {
-      webSocketService.unsubscribeFromPriceUpdates(handlePriceUpdate);
-      webSocketService.unsubscribeFromOrderBookUpdates(handleOrderBookUpdate);
-      webSocketService.unsubscribeFromTradeUpdates(handleTradeUpdate);
-      webSocketService.disconnect();
-    };
-  }, []);
+      webSocketService.unsubscribeFromPriceUpdates(handlePriceUpdate)
+      webSocketService.unsubscribeFromOrderBookUpdates(handleOrderBookUpdate)
+      webSocketService.unsubscribeFromTradeUpdates(handleTradeUpdate)
+      webSocketService.unsubscribeFromChartData(handleChartUpdate)
+      webSocketService.disconnect()
+    }
+  }, [])
 
-  // Fetch chat history on component mount
+  // Fetch chat history
   React.useEffect(() => {
     const fetchChatHistory = async () => {
       try {
-        const history = await chatService.getChatHistory();
-        setMessages(history);
+        const history = await chatService.getChatHistory()
+        setMessages(history)
       } catch (error) {
-        console.error('Error fetching chat history:', error);
+        console.error('Error fetching chat history:', error)
       }
-    };
+    }
 
-    fetchChatHistory();
-  }, []);
+    fetchChatHistory()
+  }, [])
 
   // Scroll to bottom when messages change
   React.useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [messages]);
+  }, [messages])
 
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading) return
     
-    setIsLoading(true);
+    setIsLoading(true)
     try {
-      const response = await chatService.sendMessage(input);
+      const response = await chatService.sendMessage(input)
       setMessages(prev => [
         ...prev,
         { 
@@ -104,28 +139,28 @@ export default function TradingInterface() {
           content: input,
           role: 'user',
           timestamp: new Date(),
-          userId: 0 // This will be set by the backend
+          userId: 0
         },
         {
           id: Date.now() + 1,
           content: response,
           role: 'assistant',
           timestamp: new Date(),
-          userId: 0 // This will be set by the backend
+          userId: 0
         }
-      ]);
-      setInput('');
+      ])
+      setInput('')
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error sending message:', error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const formatPrice = (price: number) => price.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  });
+  })
 
   const formatTime = (timestamp: number) => {
     return new Date(timestamp).toLocaleTimeString('en-US', {
@@ -133,27 +168,31 @@ export default function TradingInterface() {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
-    });
-  };
+    })
+  }
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground dark">
       {/* Header */}
       <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold text-white">BTCUSDT</h1>
+          <h1 className="text-xl font-bold text-white">{SYMBOL}</h1>
           <div className="flex items-center gap-2">
             <span className="text-2xl font-semibold text-white">{formatPrice(currentPrice)}</span>
             <span className="text-green-400">+0.89%</span>
           </div>
         </div>
-        <div className="w-[200px]">
-          <Tabs value={tradeType} onValueChange={(value) => setTradeType(value)} className="w-full">
-            <TabsList className="w-full bg-gray-800">
-              <TabsTrigger value="futures" className="flex-1 data-[state=active]:bg-gray-700">Futures</TabsTrigger>
-              <TabsTrigger value="spot" className="flex-1 data-[state=active]:bg-gray-700">Spot</TabsTrigger>
-            </TabsList>
-          </Tabs>
+        <div className="flex gap-2">
+          {TIMEFRAMES.map((tf) => (
+            <Button
+              key={tf}
+              variant={selectedTimeframe === tf ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedTimeframe(tf)}
+            >
+              {tf}
+            </Button>
+          ))}
         </div>
       </div>
 
@@ -163,8 +202,8 @@ export default function TradingInterface() {
         <div className="w-[300px] border-r border-gray-700">
           <Tabs defaultValue="order-book" className="h-full">
             <TabsList className="w-full bg-gray-800">
-              <TabsTrigger value="order-book" className="flex-1 data-[state=active]:bg-gray-700">Order Book</TabsTrigger>
-              <TabsTrigger value="trades" className="flex-1 data-[state=active]:bg-gray-700">Trades</TabsTrigger>
+              <TabsTrigger value="order-book" className="flex-1">Order Book</TabsTrigger>
+              <TabsTrigger value="trades" className="flex-1">Trades</TabsTrigger>
             </TabsList>
             <TabsContent value="order-book" className="h-[calc(100%-40px)]">
               <ScrollArea className="h-full">
@@ -208,56 +247,76 @@ export default function TradingInterface() {
           </Tabs>
         </div>
 
-        {/* Chart Area */}
-        <div className="flex-1 border-r border-gray-700 p-4">
-          <div className="h-full bg-gray-800 rounded-lg flex items-center justify-center text-gray-400">
-            Trading Chart Placeholder
+        {/* Chart and Trading Area */}
+        <div className="flex-1 flex flex-col border-r border-gray-700">
+          {/* Chart */}
+          <div className="flex-1 p-4">
+            <PriceChart 
+              data={chartData}
+              height={500}
+              onCrosshairMove={(price) => {
+                if (price) setCurrentPrice(price)
+              }}
+            />
+          </div>
+          
+          {/* Trading Form */}
+          <div className="p-4 border-t border-gray-700">
+            <TradingForm symbol={SYMBOL} currentPrice={currentPrice} />
           </div>
         </div>
 
-        {/* Chat Assistant */}
+        {/* Positions, Orders, and Chat */}
         <div className="w-[300px] flex flex-col">
-          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === 'assistant' ? 'justify-start' : 'justify-end'}`}
-                >
+          {/* Positions and Orders */}
+          <div className="flex-1 border-b border-gray-700">
+            <PositionsOrders />
+          </div>
+
+          {/* Chat Assistant */}
+          <div className="h-[400px] flex flex-col">
+            <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+              <div className="space-y-4">
+                {messages.map((message) => (
                   <div
-                    className={`max-w-[80%] rounded-lg p-2 ${
-                      message.role === 'assistant'
-                        ? 'bg-gray-700 text-gray-300'
-                        : 'bg-blue-600 text-white'
-                    }`}
+                    key={message.id}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {message.content}
+                    <div
+                      className={`max-w-[80%] rounded-lg p-3 ${
+                        message.role === 'user'
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-gray-700 text-gray-100'
+                      }`}
+                    >
+                      {message.content}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-          <div className="p-4 border-t border-gray-700">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Ask about trading..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                disabled={isLoading}
-                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400"
-              />
-              <Button
-                onClick={handleSend}
-                disabled={isLoading}
-                className="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 p-0"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
+                ))}
+              </div>
+            </ScrollArea>
+            <div className="p-4 border-t border-gray-700">
+              <div className="flex gap-2">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Ask about trading..."
+                  className="bg-gray-700"
+                />
+                <Button
+                  size="sm"
+                  onClick={handleSend}
+                  disabled={isLoading}
+                  className="w-10 h-10 p-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 }
