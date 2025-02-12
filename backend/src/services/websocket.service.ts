@@ -1,81 +1,63 @@
-import { Server as SocketServer } from 'socket.io';
 import { Server } from 'http';
-import { redisService } from './redis.service';
+import { NotificationService } from './notification.service';
 
-class WebSocketService {
-    private io: SocketServer | null = null;
+/**
+ * @deprecated Use NotificationService directly instead
+ */
+export class WebSocketService {
+    private static instance: WebSocketService;
+    private notificationService: NotificationService;
 
-    initialize(server: Server) {
-        this.io = new SocketServer(server, {
-            cors: {
-                origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-                methods: ['GET', 'POST']
-            }
-        });
-
-        this.io.on('connection', (socket) => {
-            console.log('Client connected:', socket.id);
-
-            // Handle subscription to price updates
-            socket.on('subscribe:price', () => {
-                socket.join('price-updates');
-            });
-
-            // Handle subscription to order book updates
-            socket.on('subscribe:orderbook', () => {
-                socket.join('orderbook-updates');
-            });
-
-            // Handle subscription to trade history
-            socket.on('subscribe:trades', () => {
-                socket.join('trade-updates');
-            });
-
-            socket.on('disconnect', () => {
-                console.log('Client disconnected:', socket.id);
-            });
-        });
+    private constructor() {
+        this.notificationService = NotificationService.getInstance();
     }
 
-    // Broadcast price update to all subscribed clients
+    public static getInstance(): WebSocketService {
+        if (!WebSocketService.instance) {
+            WebSocketService.instance = new WebSocketService();
+        }
+        return WebSocketService.instance;
+    }
+
+    initialize(server: Server) {
+        this.notificationService.initialize(server);
+    }
+
+    /**
+     * @deprecated Use NotificationService.broadcastPriceUpdate instead
+     */
     broadcastPriceUpdate(priceData: {
         symbol: string;
         price: number;
         timestamp: number;
     }) {
-        if (!this.io) return;
-        this.io.to('price-updates').emit('price:update', priceData);
+        this.notificationService.broadcastPriceUpdate(priceData.symbol, priceData.price);
     }
 
-    // Broadcast order book update
+    /**
+     * @deprecated Use NotificationService.broadcastOrderBookUpdate instead
+     */
     broadcastOrderBookUpdate(orderBookData: {
+        symbol: string;
         bids: Array<[number, number]>;
         asks: Array<[number, number]>;
         timestamp: number;
     }) {
-        if (!this.io) return;
-        this.io.to('orderbook-updates').emit('orderbook:update', orderBookData);
+        this.notificationService.broadcastOrderBookUpdate(orderBookData.symbol, orderBookData);
     }
 
-    // Broadcast new trade
+    /**
+     * @deprecated Use NotificationService.broadcastTradeExecution instead
+     */
     broadcastNewTrade(tradeData: {
         price: number;
         amount: number;
         side: 'buy' | 'sell';
         timestamp: number;
     }) {
-        if (!this.io) return;
-        this.io.to('trade-updates').emit('trade:new', tradeData);
-    }
-
-    // Cache the latest price in Redis
-    async cacheLatestPrice(symbol: string, price: number) {
-        try {
-            await redisService.set(`price:${symbol}`, price.toString());
-        } catch (error) {
-            console.error('Error caching price:', error);
-        }
+        this.notificationService.broadcastTradeExecution(tradeData);
     }
 }
 
-export const webSocketService = new WebSocketService();
+// Export a deprecated instance for backward compatibility
+export const webSocketService = WebSocketService.getInstance();

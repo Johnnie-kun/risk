@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { jwtUtils } from '../utils/jwt.utils';
+import { TokenService } from '../services/token.service';
 
 /**
  * Extended Request interface to include user information.
@@ -38,7 +38,8 @@ export const authMiddleware = async (
     }
 
     // Verify the token
-    const decoded = jwtUtils.verifyToken(token);
+    const tokenService = TokenService.getInstance();
+    const decoded = await tokenService.verifyToken(token);
     if (!decoded) {
       res.status(401).json({ error: 'Invalid or expired token' });
       return;

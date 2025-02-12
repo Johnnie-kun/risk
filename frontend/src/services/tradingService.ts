@@ -1,5 +1,7 @@
 import { httpClient } from '@/utils/httpClient'
 import { AxiosResponse } from 'axios'
+import { api } from './api'
+import { BinanceTicker, BinanceOrder } from '../types'
 
 export interface Order {
   id: string
@@ -66,6 +68,16 @@ interface TradeData {
 
 class TradingService {
   private readonly baseUrl = '/api/trading'
+  private static instance: TradingService
+
+  private constructor() {}
+
+  public static getInstance(): TradingService {
+    if (!TradingService.instance) {
+      TradingService.instance = new TradingService()
+    }
+    return TradingService.instance
+  }
 
   // Order Management
   async placeOrder(order: Omit<Order, 'id' | 'status' | 'timestamp'>): Promise<Order> {
@@ -140,6 +152,36 @@ class TradingService {
     )
     return response.data
   }
+
+  async getCurrentPrice(symbol: string): Promise<BinanceTicker> {
+    try {
+      const response = await api.get(`/trading/price/${symbol}`)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching current price:', error)
+      throw error
+    }
+  }
+
+  async getAccountInfo(): Promise<any> {
+    try {
+      const response = await api.get('/trading/account')
+      return response.data
+    } catch (error) {
+      console.error('Error fetching account information:', error)
+      throw error
+    }
+  }
+
+  async placeOrder(order: Partial<BinanceOrder>): Promise<BinanceOrder> {
+    try {
+      const response = await api.post('/trading/order', order)
+      return response.data
+    } catch (error) {
+      console.error('Error placing order:', error)
+      throw error
+    }
+  }
 }
 
-export const tradingService = new TradingService()
+export const tradingService = TradingService.getInstance()

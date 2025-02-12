@@ -1,56 +1,73 @@
-import { User, AuthResponse } from '../types/auth';
+import { api } from './api';
+import { User, AuthResponse } from '../types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/auth';
+class AuthService {
+  private static instance: AuthService;
 
-// Helper function to handle API responses
-async function handleResponse(response: Response) {
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || 'Request failed');
+  private constructor() {}
+
+  public static getInstance(): AuthService {
+    if (!AuthService.instance) {
+      AuthService.instance = new AuthService();
+    }
+    return AuthService.instance;
   }
-  return response.json();
-}
 
-export const authService = {
   async login(username: string, password: string): Promise<AuthResponse> {
-    const response = await fetch(`${API_URL}/token`, {
-      method: 'POST',
-      credentials: 'include', // Important for cookies
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ username, password }),
-    });
-
-    return handleResponse(response);
-  },
-
-  async register(username: string, email: string, password: string): Promise<User> {
-    const response = await fetch(`${API_URL}/register`, {
-      method: 'POST',
-      credentials: 'include', // Important for cookies
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, email, password }),
-    });
-
-    return handleResponse(response);
-  },
-
-  async getCurrentUser(): Promise<User> {
-    const response = await fetch(`${API_URL}/me`, {
-      credentials: 'include', // Important for cookies
-    });
-
-    return handleResponse(response);
-  },
-
-  async logout(): Promise<void> {
-    const response = await fetch(`${API_URL}/logout`, {
-      method: 'POST',
-      credentials: 'include', // Important for cookies
-    });
-
-    if (!response.ok) {
-      throw new Error('Logout failed');
+    try {
+      const response = await api.post('/auth/login', { username, password });
+      const { token, refreshToken } = response.data;
+      
+      // Store tokens
+      localStorage.setItem('token', token);
+      localStorage.setItem('refreshToken', refreshToken);
+      
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
   }
-};
+
+  async logout(): Promise<void> {
+    try {
+      await api.post('/auth/logout');
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  }
+
+  async refreshToken(): Promise<string> {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
+      const response = await api.post('/auth/refresh', { refreshToken });
+      const { token } = response.data;
+      localStorage.setItem('token', token);
+      
+      return token;
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      throw error;
+    }
+  }
+
+  async getCurrentUser(): Promise<User> {
+    try {
+      const response = await api.get('/auth/me');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+      throw error;
+    }
+  }
+}
+
+export const authService = AuthService.getInstance();
 
