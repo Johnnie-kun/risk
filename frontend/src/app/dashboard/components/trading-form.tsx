@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
+import { Slider } from "@radix-ui/react-slider"
+import { Switch } from "@radix-ui/react-switch"
 import { tradingService } from '@/services/tradingService'
-import { toast } from '@/components/ui/use-toast'
+import { toast } from '@/components/ui'
 import { Card } from "@/components/ui/card"
 import { Calculator } from 'lucide-react'
 
@@ -28,6 +28,17 @@ interface OrderPreview {
   potentialProfit?: number
   potentialLoss?: number
   liquidationPrice?: number
+}
+
+interface PlaceOrderParams {
+  symbol: string
+  side: 'buy' | 'sell'
+  type: 'market' | 'limit'
+  amount: number
+  leverage?: number
+  price?: number
+  stopLoss?: number
+  takeProfit?: number
 }
 
 export default function TradingForm({ symbol, currentPrice, balance = 0 }: TradingFormProps) {
@@ -117,7 +128,7 @@ export default function TradingForm({ symbol, currentPrice, balance = 0 }: Tradi
     try {
       setIsSubmitting(true)
       
-      await tradingService.placeOrder({
+      const orderParams: PlaceOrderParams = {
         symbol,
         side,
         type: orderType,
@@ -126,7 +137,9 @@ export default function TradingForm({ symbol, currentPrice, balance = 0 }: Tradi
         ...(orderType === 'limit' && { price: parseFloat(price) }),
         ...(stopLoss && { stopLoss: parseFloat(stopLoss) }),
         ...(takeProfit && { takeProfit: parseFloat(takeProfit) })
-      })
+      }
+
+      await tradingService.placeOrder(orderParams)
 
       toast({
         title: "Success",
@@ -153,7 +166,7 @@ export default function TradingForm({ symbol, currentPrice, balance = 0 }: Tradi
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="p-4 border border-gray-700 rounded-lg bg-gray-800">
         {/* Order Type Selection */}
-        <Tabs value={orderType} onValueChange={(value: 'market' | 'limit') => setOrderType(value)}>
+        <Tabs value={orderType} onValueChange={(value) => setOrderType(value as 'market' | 'limit')}>
           <TabsList className="w-full">
             <TabsTrigger value="market" className="flex-1">Market</TabsTrigger>
             <TabsTrigger value="limit" className="flex-1">Limit</TabsTrigger>
@@ -194,7 +207,7 @@ export default function TradingForm({ symbol, currentPrice, balance = 0 }: Tradi
             </div>
             <Slider
               value={[leverage]}
-              onValueChange={([value]) => setLeverage(value)}
+              onValueChange={(values: number[]) => setLeverage(values[0])}
               min={1}
               max={100}
               step={1}
@@ -219,7 +232,7 @@ export default function TradingForm({ symbol, currentPrice, balance = 0 }: Tradi
               <label className="text-sm text-gray-300">Risk (%)</label>
               <Slider
                 value={[riskPercent]}
-                onValueChange={([value]) => setRiskPercent(value)}
+                onValueChange={(values: number[]) => setRiskPercent(values[0])}
                 min={0.1}
                 max={5}
                 step={0.1}

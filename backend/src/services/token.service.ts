@@ -2,11 +2,14 @@ import { JwtPayload, Secret, SignOptions, VerifyOptions } from "jsonwebtoken";
 import { JWT_CONFIG } from "../config/jwt.config";
 import { redisService } from "./redis.service";
 import jwt from "jsonwebtoken";
+import { BaseService } from "./base.service";
 
-export class TokenService {
-  private static instance: TokenService;
+export class TokenService extends BaseService {
+  private static instance: TokenService | null = null;
 
-  private constructor() {}
+  protected constructor() {
+    super();
+  }
 
   public static getInstance(): TokenService {
     if (!TokenService.instance) {

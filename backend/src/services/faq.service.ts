@@ -10,6 +10,7 @@ interface FAQ {
 }
 
 export class FAQService extends BaseService {
+  private static instance: FAQService | null = null;
   private cacheService: CacheService;
   private faqDatabase: FAQ[] = [
     {
@@ -33,6 +34,13 @@ export class FAQService extends BaseService {
     super();
     this.cacheService = CacheService.getInstance();
     this.initializeCache();
+  }
+
+  public static getInstance(): FAQService {
+    if (!FAQService.instance) {
+      FAQService.instance = new FAQService();
+    }
+    return FAQService.instance;
   }
 
   private async initializeCache(): Promise<void> {

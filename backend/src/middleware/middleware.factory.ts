@@ -13,6 +13,7 @@ export class MiddlewareFactory {
         const validated = await schema.validateAsync(req.body);
         req.body = validated;
         next();
+        return;
       } catch (err) {
         const error = err as Error;
         if (options.errorHandler) {
@@ -40,6 +41,7 @@ export class MiddlewareFactory {
           return res.status(500).json(options.errorHandler(error));
         }
         next(error);
+        return;
       }
     };
   }
@@ -71,11 +73,12 @@ export class MiddlewareFactory {
       requests.set(ip, userRequests);
 
       next();
+      return;
     };
   }
 
   static createErrorHandlerMiddleware() {
-    return (error: Error, req: Request, res: Response, next: NextFunction) => {
+    return (error: Error, _: Request, res: Response) => {
       console.error('Global error:', error);
       
       if (error.name === 'ValidationError') {

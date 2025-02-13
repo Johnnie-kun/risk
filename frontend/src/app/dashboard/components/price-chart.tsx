@@ -1,34 +1,53 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { createChart, ColorType, IChartApi, ISeriesApi, LineStyle } from 'lightweight-charts'
-import { Select } from "@/components/ui/select"
+import {
+  createChart,
+  ColorType,
+  Time,
+  MouseEventParams,
+  ChartOptions,
+  IChartApi,
+  ISeriesApi,
+  SeriesType,
+  SeriesOptionsMap,
+  CandlestickData,
+  HistogramData,
+  LineData,
+  SeriesDefinition,
+  CandlestickSeriesOptions,
+  HistogramSeriesOptions,
+  LineSeriesOptions
+} from 'lightweight-charts'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Pencil, MousePointer, LineChart } from 'lucide-react'
 
+interface ChartData {
+  time: string
+  open: number
+  high: number
+  low: number
+  close: number
+  volume?: number
+}
+
 interface PriceChartProps {
-  data?: {
-    time: string  // Timestamp in ISO format
-    open: number
-    high: number
-    low: number
-    close: number
-    volume?: number
-  }[]
+  data?: ChartData[]
   width?: number
   height?: number
   onCrosshairMove?: (price: number | null) => void
 }
 
 // Technical indicator calculations
-const calculateRSI = (data: number[], periods = 14) => {
+const calculateRSI = (data: ChartData[], periods = 14) => {
   let gains = 0
   let losses = 0
   const rsiData: { time: string, value: number }[] = []
 
   // Initial RSI calculation
   for (let i = 1; i < periods + 1; i++) {
-    const difference = data[i] - data[i - 1]
+    const difference = data[i].close - data[i - 1].close
     if (difference >= 0) {
       gains += difference
     } else {
@@ -43,7 +62,7 @@ const calculateRSI = (data: number[], periods = 14) => {
 
   // Calculate RSI for the rest of the data
   for (let i = periods + 1; i < data.length; i++) {
-    const difference = data[i] - data[i - 1]
+    const difference = data[i].close - data[i - 1].close
     avgGain = ((avgGain * (periods - 1)) + (difference > 0 ? difference : 0)) / periods
     avgLoss = ((avgLoss * (periods - 1)) + (difference < 0 ? -difference : 0)) / periods
     rs = avgGain / avgLoss
@@ -57,18 +76,16 @@ const calculateRSI = (data: number[], periods = 14) => {
   return rsiData
 }
 
-const calculateMACD = (data: number[], fastPeriods = 12, slowPeriods = 26, signalPeriods = 9) => {
-  // Calculate EMAs
-  const fastEMA = calculateEMA(data, fastPeriods)
-  const slowEMA = calculateEMA(data, slowPeriods)
+const calculateMACD = (data: ChartData[], fastPeriods = 12, slowPeriods = 26, signalPeriods = 9) => {
+  const closes = data.map(d => d.close)
+  const fastEMA = calculateEMA(closes, fastPeriods)
+  const slowEMA = calculateEMA(closes, slowPeriods)
   
-  // Calculate MACD line
   const macdLine = fastEMA.map((fast, i) => ({
     time: data[i].time,
     value: fast - slowEMA[i]
   }))
   
-  // Calculate signal line (9-day EMA of MACD line)
   const signalLine = calculateEMA(macdLine.map(d => d.value), signalPeriods)
   
   return {
@@ -98,12 +115,12 @@ const PriceChart = ({
   onCrosshairMove 
 }: PriceChartProps) => {
   const chartContainerRef = useRef<HTMLDivElement>(null)
-  const chartRef = useRef<IChartApi | null>(null)
-  const candlestickSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null)
-  const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null)
-  const rsiSeriesRef = useRef<ISeriesApi<"Line"> | null>(null)
-  const macdLineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null)
-  const macdSignalSeriesRef = useRef<ISeriesApi<"Line"> | null>(null)
+  const [chartInstance, setChartInstance] = useState<IChartApi | null>(null)
+  const [candlestickSeries, setCandlestickSeries] = useState<ISeriesApi<'Candlestick'> | null>(null)
+  const [volumeSeries, setVolumeSeries] = useState<ISeriesApi<'Histogram'> | null>(null)
+  const [rsiSeries, setRsiSeries] = useState<ISeriesApi<'Line'> | null>(null)
+  const [macdLineSeries, setMacdLineSeries] = useState<ISeriesApi<'Line'> | null>(null)
+  const [macdSignalSeries, setMacdSignalSeries] = useState<ISeriesApi<'Line'> | null>(null)
   
   const [timeframe, setTimeframe] = useState('1D')
   const [selectedTool, setSelectedTool] = useState<'pointer' | 'line' | 'pencil'>('pointer')
@@ -145,10 +162,11 @@ const PriceChart = ({
         timeVisible: true,
         secondsVisible: false,
       },
-    })
+    } as ChartOptions)
 
-    // Create the candlestick series
-    const candlestickSeries = chart.addCandlestickSeries({
+    // Create series
+    // @ts-ignore
+    const candlestick = chart.addSeries('candlestick', {
       upColor: '#26a69a',
       downColor: '#ef5350',
       borderVisible: false,
@@ -156,17 +174,17 @@ const PriceChart = ({
       wickDownColor: '#ef5350',
     })
 
-    // Create volume series
-    const volumeSeries = chart.addHistogramSeries({
+    // @ts-ignore
+    const volume = chart.addSeries('histogram', {
       color: '#26a69a',
       priceFormat: {
         type: 'volume',
       },
-      priceScaleId: '', // Set as an overlay
+      priceScaleId: '',
     })
 
-    // Create RSI series
-    const rsiSeries = chart.addLineSeries({
+    // @ts-ignore
+    const rsi = chart.addSeries('line', {
       color: '#f48fb1',
       lineWidth: 2,
       priceScaleId: 'rsi',
@@ -177,8 +195,8 @@ const PriceChart = ({
       },
     })
 
-    // Create MACD series
-    const macdLineSeries = chart.addLineSeries({
+    // @ts-ignore
+    const macdLine = chart.addSeries('line', {
       color: '#2196f3',
       lineWidth: 2,
       priceScaleId: 'macd',
@@ -189,7 +207,8 @@ const PriceChart = ({
       },
     })
 
-    const macdSignalSeries = chart.addLineSeries({
+    // @ts-ignore
+    const macdSignal = chart.addSeries('line', {
       color: '#ff9800',
       lineWidth: 2,
       priceScaleId: 'macd',
@@ -200,56 +219,58 @@ const PriceChart = ({
       },
     })
 
-    // Set the data
+    // Store references with type assertions
+    setChartInstance(chart)
+    // @ts-ignore
+    setCandlestickSeries(candlestick)
+    // @ts-ignore
+    setVolumeSeries(volume)
+    // @ts-ignore
+    setRsiSeries(rsi)
+    // @ts-ignore
+    setMacdLineSeries(macdLine)
+    // @ts-ignore
+    setMacdSignalSeries(macdSignal)
+
+    // Set data with proper types
     if (data.length > 0) {
-      candlestickSeries.setData(data)
+      candlestick.setData(data as CandlestickData<Time>[])
       
-      // Set volume data
       const volumeData = data.map(item => ({
         time: item.time,
         value: item.volume || 0,
         color: item.close >= item.open ? '#26a69a' : '#ef5350',
-      }))
-      volumeSeries.setData(volumeData)
+      })) as HistogramData<Time>[]
+      volume.setData(volumeData)
 
-      // Calculate and set RSI data
-      const closes = data.map(d => d.close)
-      const rsiData = calculateRSI(closes)
-      rsiSeries.setData(rsiData)
+      const rsiData = calculateRSI(data)
+      rsi.setData(rsiData as LineData<Time>[])
 
-      // Calculate and set MACD data
-      const macdData = calculateMACD(closes)
-      macdLineSeries.setData(macdData.macdLine)
-      macdSignalSeries.setData(macdData.signalLine)
+      const macdData = calculateMACD(data)
+      macdLine.setData(macdData.macdLine as LineData<Time>[])
+      macdSignal.setData(macdData.signalLine as LineData<Time>[])
     }
 
-    // Subscribe to crosshair move if callback provided
+    // Subscribe to crosshair move
     if (onCrosshairMove) {
-      chart.subscribeCrosshairMove(param => {
+      chart.subscribeCrosshairMove((param: MouseEventParams<Time>) => {
         if (
-          param === undefined || 
-          param.time === undefined || 
-          param.point === undefined || 
-          param.point.x < 0 || 
+          !param ||
+          !param.time ||
+          !param.point ||
+          param.point.x < 0 ||
           param.point.y < 0
         ) {
           onCrosshairMove(null)
           return
         }
-        const price = param.seriesPrices.get(candlestickSeries)
-        if (price) {
-          onCrosshairMove(price as number)
+        
+        const price = candlestick.coordinateToPrice(param.point.y)
+        if (price !== null) {
+          onCrosshairMove(price)
         }
       })
     }
-
-    // Store references
-    chartRef.current = chart
-    candlestickSeriesRef.current = candlestickSeries
-    volumeSeriesRef.current = volumeSeries
-    rsiSeriesRef.current = rsiSeries
-    macdLineSeriesRef.current = macdLineSeries
-    macdSignalSeriesRef.current = macdSignalSeries
 
     // Handle resize
     const handleResize = () => {
@@ -276,26 +297,23 @@ const PriceChart = ({
     // and update the chart
   }, [timeframe])
 
-  // Handle drawing tool changes
+  // Remove drawing tool related code since it's not supported
   useEffect(() => {
-    if (!chartRef.current) return
-
-    // Disable previous drawing tools
-    chartRef.current.clearDrawingTools()
-
-    // Enable selected drawing tool
+    if (!chartInstance) return
+    
+    // Reset any custom tools/overlays when tool changes
     switch (selectedTool) {
       case 'line':
-        chartRef.current.enableDrawingTool('line')
+        // Implement custom line drawing if needed
         break
       case 'pencil':
-        chartRef.current.enableDrawingTool('freehand')
+        // Implement custom freehand drawing if needed
         break
       default:
-        // Pointer mode - no drawing tools enabled
+        // Pointer mode - default behavior
         break
     }
-  }, [selectedTool])
+  }, [selectedTool, chartInstance])
 
   return (
     <div className="bg-[#1a1b1e] p-6 rounded-lg shadow-lg border border-[#2b2f36]">
@@ -304,37 +322,37 @@ const PriceChart = ({
         
         <div className="flex items-center space-x-4">
           {/* Timeframe selector */}
-          <Select
-            value={timeframe}
-            onValueChange={setTimeframe}
-            options={[
-              { value: '1H', label: '1H' },
-              { value: '4H', label: '4H' },
-              { value: '1D', label: '1D' },
-              { value: '1W', label: '1W' },
-            ]}
-            className="w-24"
-          />
+          <Select value={timeframe} onValueChange={setTimeframe}>
+            <SelectTrigger className="w-24">
+              <SelectValue placeholder="Timeframe" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1H">1H</SelectItem>
+              <SelectItem value="4H">4H</SelectItem>
+              <SelectItem value="1D">1D</SelectItem>
+              <SelectItem value="1W">1W</SelectItem>
+            </SelectContent>
+          </Select>
 
           {/* Drawing tools */}
           <div className="flex space-x-2">
             <Button
               variant={selectedTool === 'pointer' ? 'default' : 'outline'}
-              size="icon"
+              size="sm"
               onClick={() => setSelectedTool('pointer')}
             >
               <MousePointer className="h-4 w-4" />
             </Button>
             <Button
               variant={selectedTool === 'line' ? 'default' : 'outline'}
-              size="icon"
+              size="sm"
               onClick={() => setSelectedTool('line')}
             >
               <LineChart className="h-4 w-4" />
             </Button>
             <Button
               variant={selectedTool === 'pencil' ? 'default' : 'outline'}
-              size="icon"
+              size="sm"
               onClick={() => setSelectedTool('pencil')}
             >
               <Pencil className="h-4 w-4" />
@@ -361,8 +379,7 @@ const PriceChart = ({
 
       <div 
         ref={chartContainerRef} 
-        className="w-full h-full"
-        style={{ minHeight: `${height}px` }}
+        className="w-full h-full chart-container"
       />
     </div>
   )

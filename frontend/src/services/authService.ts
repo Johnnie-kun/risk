@@ -1,5 +1,5 @@
 import { api } from './api';
-import { User, AuthResponse } from '../types';
+import { User, AuthResponse } from '../types/auth';
 
 class AuthService {
   private static instance: AuthService;
@@ -64,6 +64,15 @@ class AuthService {
       return response.data;
     } catch (error) {
       console.error('Error fetching current user:', error);
+      throw error;
+    }
+  }
+
+  async register(username: string, email: string, password: string): Promise<void> {
+    try {
+      await api.post('/auth/register', { username, email, password });
+    } catch (error) {
+      console.error('Registration error:', error);
       throw error;
     }
   }

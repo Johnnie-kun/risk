@@ -13,11 +13,19 @@ const openai = new OpenAI({
 export class ChatService extends BaseService {
   private faqService: FAQService;
   private notificationService: NotificationService;
+  private static instance: ChatService;
 
   protected constructor() {
     super();
     this.faqService = FAQService.getInstance();
     this.notificationService = NotificationService.getInstance();
+  }
+
+  public static getInstance(): ChatService {
+    if (!ChatService.instance) {
+      ChatService.instance = new ChatService();
+    }
+    return ChatService.instance;
   }
 
   /**

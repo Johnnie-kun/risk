@@ -2,8 +2,17 @@ import { redisService } from './redis.service';
 import { BaseService } from './base.service';
 
 export class CacheService extends BaseService {
+  private static instance: CacheService | null = null;
+
   protected constructor() {
     super();
+  }
+
+  public static getInstance(): CacheService {
+    if (!CacheService.instance) {
+      CacheService.instance = new CacheService();
+    }
+    return CacheService.instance;
   }
 
   /**

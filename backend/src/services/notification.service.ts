@@ -1,13 +1,15 @@
 import { Server as SocketServer } from 'socket.io';
 import { Server } from 'http';
 import { CacheService } from './cache.service';
+import { BaseService } from './base.service';
 
-export class NotificationService {
-  private static instance: NotificationService;
+export class NotificationService extends BaseService {
+  private static instance: NotificationService | null = null;
   private io: SocketServer | null = null;
   private cacheService: CacheService;
 
-  private constructor() {
+  protected constructor() {
+    super();
     this.cacheService = CacheService.getInstance();
   }
 

@@ -1,4 +1,4 @@
-import { httpClient } from '@/utils/httpClient'
+import { httpClient } from '../utils/httpClient'
 import { AxiosResponse } from 'axios'
 import { api } from './api'
 import { BinanceTicker, BinanceOrder } from '../types'
@@ -173,7 +173,7 @@ class TradingService {
     }
   }
 
-  async placeOrder(order: Partial<BinanceOrder>): Promise<BinanceOrder> {
+  async placeBinanceOrder(order: Partial<BinanceOrder>): Promise<BinanceOrder> {
     try {
       const response = await api.post('/trading/order', order)
       return response.data

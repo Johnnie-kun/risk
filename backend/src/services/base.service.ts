@@ -1,15 +1,5 @@
 export abstract class BaseService {
-  private static instances = new Map<string, any>();
-
   protected constructor() {}
-
-  static getInstance<T extends BaseService>(this: new () => T): T {
-    const className = this.name;
-    if (!this.instances.has(className)) {
-      this.instances.set(className, new this());
-    }
-    return this.instances.get(className);
-  }
 
   protected handleError(error: Error, context: string): never {
     console.error(`Error in ${context}:`, error);

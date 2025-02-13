@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { tradingService, Order, Position } from '@/services/tradingService'
-import { toast } from '@/components/ui/use-toast'
+import { toast } from '@/components/ui'
 
 export default function PositionsOrders() {
   const [positions, setPositions] = React.useState<Position[]>([])
@@ -114,9 +114,9 @@ export default function PositionsOrders() {
                   </div>
                   <div className="mt-2">
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       size="sm"
-                      className="w-full"
+                      className="w-full text-red-400 hover:text-red-300"
                       onClick={() => handleClosePosition(position.symbol)}
                     >
                       Close Position
@@ -158,9 +158,9 @@ export default function PositionsOrders() {
                   </div>
                   <div className="mt-2">
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       size="sm"
-                      className="w-full"
+                      className="w-full text-red-400 hover:text-red-300"
                       onClick={() => handleCancelOrder(order.id)}
                     >
                       Cancel Order
