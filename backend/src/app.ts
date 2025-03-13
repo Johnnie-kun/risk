@@ -90,7 +90,8 @@ const connectToRedis = async (retries = 5, delay = 5000): Promise<void> => {
       setTimeout(() => connectToRedis(retries - 1, delay), delay);
     } else {
       console.error('🚨 Max retries reached. Could not connect to Redis.');
-      process.exit(1);
+      console.warn('⚠️ Application will continue without Redis. Some features may not work properly.');
+      // Don't exit the process, let the application continue without Redis
     }
   }
 };
@@ -100,7 +101,13 @@ let httpServer: ReturnType<typeof createServer>;
 
 const startServer = async () => {
   try {
-    await connectToRedis();
+    // Try to connect to Redis but don't fail if it doesn't connect
+    try {
+      await connectToRedis();
+    } catch (error) {
+      console.warn('⚠️ Redis connection failed, but server will continue without it.');
+    }
+    
     webSocketService.initialize(server);
 
     httpServer = server.listen(PORT, () => {

@@ -2,16 +2,17 @@
     "name": "risk-backend",
     "version": "1.0.0",
     "description": "Backend for Risk Website",
-    "main": "src/app.js",
+    "main": "dist/app.js",
     "scripts": {
-        "start": "node dist/index.js",
-        "dev": "nodemon --exec ts-node src/index.ts",
+        "start": "node dist/app.js",
+        "dev": "NODE_ENV=development DEBUG=* nodemon --exec ts-node src/app.ts",
         "build": "tsc",
         "test": "jest"
     },
     "dependencies": {
         "bcrypt": "^5.1.1",
         "cors": "^2.8.5",
+        "dotenv": "^16.4.7",
         "express": "^4.21.2",
         "express-rate-limit": "^6.7.0",
         "helmet": "^7.0.0",
@@ -38,7 +39,6 @@
         "@types/pg": "^8.11.10",
         "@types/redis": "^4.0.10",
         "@types/socket.io": "^3.0.2",
-        "dotenv": "^16.4.7",
         "eslint": "^8.50.0",
         "jest": "^29.5.0",
         "nodemon": "^2.0.22",

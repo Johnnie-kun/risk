@@ -2,12 +2,23 @@ FROM node:18
 
 WORKDIR /app
 
-COPY package*.json ./
+# Install nodemon globally
+RUN npm install -g nodemon ts-node typescript
 
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install dependencies
 RUN npm install
 
+# Copy source code
 COPY . .
+
+# Build TypeScript
+RUN npm run build
 
 EXPOSE 5000
 
-CMD ["npm", "run", "dev"] 
+# Use nodemon directly instead of npm run dev
+CMD ["nodemon", "--exec", "ts-node", "src/app.ts"] 

@@ -4,15 +4,21 @@ from fastapi.responses import JSONResponse
 from dotenv import load_dotenv, find_dotenv
 import uvicorn
 import os
+import traceback
 from loguru import logger
 
-from auth import auth_router, get_current_active_user
-from routes.predictions import router as predictions_router
+from .auth import auth_router, get_current_active_user
+from .routes.predictions import router as predictions_router
 
 # Load environment variables early
-if not find_dotenv():
+env_path = find_dotenv()
+if not env_path:
     logger.warning("⚠️  .env file not found. Ensure environment variables are set.")
-load_dotenv()
+else:
+    load_dotenv(env_path)
+
+# Ensure logs directory exists
+os.makedirs("logs", exist_ok=True)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -22,22 +28,21 @@ app = FastAPI(
 )
 
 # Configure logging with Loguru
-logger.add("logs/ml_service.log", rotation="10MB", level="INFO")
+logger.add("logs/ml_service.log", rotation="10MB", level="INFO", enqueue=True)
 logger.info("📝 Logging initialized.")
 
 # Configure CORS
-allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "*").split(",")
+allowed_origins = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost,http://127.0.0.1").split(",")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Include routers
 app.include_router(auth_router)
-# Protect prediction routes with authentication
 app.include_router(
     predictions_router,
     prefix="/predictions",
@@ -52,7 +57,7 @@ async def health_check():
 # Global Exception Handlers
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    logger.error(f"HTTP exception: {exc}")
+    logger.error(f"HTTPException: {exc.detail} | Path: {request.url}")
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -64,12 +69,12 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled exception: {exc}")
+    logger.error(f"Unhandled exception at {request.url}: {exc}\n{traceback.format_exc()}")
     return JSONResponse(
         status_code=500,
         content={
             "error": "Internal Server Error",
-            "detail": str(exc)
+            "detail": "An unexpected error occurred."
         }
     )
 

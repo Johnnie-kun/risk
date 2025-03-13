@@ -5,6 +5,14 @@ import { REDIS_CONFIG } from '../config/redis.config';
 const redisClient: RedisClientType = createClient({
   url: `redis://${REDIS_CONFIG.password ? `:${REDIS_CONFIG.password}@` : ''}${REDIS_CONFIG.host}:${REDIS_CONFIG.port}`,
   database: REDIS_CONFIG.db,
+  socket: {
+    reconnectStrategy: (retries) => {
+      // Maximum retry delay is 10 seconds
+      const delay = Math.min(retries * 1000, 10000);
+      console.log(`Redis reconnect attempt ${retries} in ${delay}ms`);
+      return delay;
+    }
+  }
 });
 
 // Event listeners for Redis client
@@ -12,6 +20,7 @@ redisClient.on('error', (err: Error) => console.error('Redis Client Error:', err
 redisClient.on('connect', () => console.log('Connected to Redis'));
 redisClient.on('ready', () => console.log('Redis client is ready'));
 redisClient.on('end', () => console.log('Redis connection closed'));
+redisClient.on('reconnecting', () => console.log('Redis client reconnecting...'));
 
 export const redisService = {
   /**
@@ -37,6 +46,11 @@ export const redisService = {
    */
   async set(key: string, value: string, expireInSeconds?: number): Promise<void> {
     try {
+      if (!redisClient.isOpen) {
+        console.warn('Redis client is not connected. Skipping set operation.');
+        return;
+      }
+      
       if (expireInSeconds) {
         // Use SET with EX option for atomic set-and-expire operation
         await redisClient.set(key, value, { EX: expireInSeconds });
@@ -46,7 +60,7 @@ export const redisService = {
       console.log(`Key "${key}" set successfully`);
     } catch (error) {
       console.error('Error setting value in Redis:', error);
-      throw new Error('Failed to set value in Redis');
+      // Don't throw, just log the error
     }
   },
 
@@ -58,12 +72,17 @@ export const redisService = {
    */
   async get(key: string): Promise<string | null> {
     try {
+      if (!redisClient.isOpen) {
+        console.warn('Redis client is not connected. Returning null for get operation.');
+        return null;
+      }
+      
       const value = await redisClient.get(key);
       console.log(`Key "${key}" retrieved successfully`);
       return value;
     } catch (error) {
       console.error('Error getting value from Redis:', error);
-      throw new Error('Failed to get value from Redis');
+      return null;
     }
   },
 
@@ -74,11 +93,16 @@ export const redisService = {
    */
   async delete(key: string): Promise<void> {
     try {
+      if (!redisClient.isOpen) {
+        console.warn('Redis client is not connected. Skipping delete operation.');
+        return;
+      }
+      
       await redisClient.del(key);
       console.log(`Key "${key}" deleted successfully`);
     } catch (error) {
       console.error('Error deleting key from Redis:', error);
-      throw new Error('Failed to delete key from Redis');
+      // Don't throw, just log the error
     }
   },
 
@@ -87,8 +111,10 @@ export const redisService = {
    */
   async disconnect(): Promise<void> {
     try {
-      await redisClient.quit();
-      console.log('Redis connection closed');
+      if (redisClient.isOpen) {
+        await redisClient.quit();
+        console.log('Redis connection closed');
+      }
     } catch (error) {
       console.error('Error closing Redis connection:', error);
     }
@@ -101,12 +127,17 @@ export const redisService = {
    */
   async ping(): Promise<string> {
     try {
+      if (!redisClient.isOpen) {
+        console.warn('Redis client is not connected. Cannot ping.');
+        return 'DISCONNECTED';
+      }
+      
       const response = await redisClient.ping();
       console.log('Redis server pinged successfully');
       return response;
     } catch (error) {
       console.error('Error pinging Redis server:', error);
-      throw new Error('Failed to ping Redis server');
+      return 'ERROR';
     }
   },
 

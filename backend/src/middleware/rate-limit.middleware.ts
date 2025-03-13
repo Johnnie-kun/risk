@@ -13,6 +13,7 @@ interface RateLimitRequest extends Request {
 
 /**
  * Creates a rate limiter middleware using Redis as the store.
+ * Falls back to memory store if Redis is not available.
  *
  * @param options - Configuration options for rate limiting.
  * @returns A rate-limiting middleware for Express.
@@ -30,36 +31,79 @@ export const createRateLimiter = (options?: {
     prefix = 'rate-limit:', // Default Redis key prefix
   } = options || {};
 
-  // Ensure Redis client is connected
-  if (!redisService.client.isOpen) {
-    console.error('Redis client is not connected. Rate limiting may not work as expected.');
+  // Check if Redis client is connected
+  const isRedisConnected = redisService.client.isOpen;
+  
+  if (!isRedisConnected) {
+    console.warn('Redis client is not connected. Using memory store for rate limiting.');
+    
+    // Use memory store as fallback
+    return rateLimit({
+      windowMs,
+      max,
+      message,
+      standardHeaders: true,
+      legacyHeaders: false,
+      handler: (req: RateLimitRequest, res) => {
+        res.status(429).json({
+          error: message,
+          retryAfter: req.rateLimit?.resetTime
+            ? Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000)
+            : undefined,
+        });
+      },
+    });
   }
 
-  return rateLimit({
-    store: new RedisStore({
-      sendCommand: async (...args: string[]) => {
-        try {
-          return await redisService.client.sendCommand(args);
-        } catch (error) {
-          console.error('Redis command error in rate limiter:', error);
-          throw error;
-        }
+  // Use Redis store if connected
+  try {
+    return rateLimit({
+      store: new RedisStore({
+        sendCommand: async (...args: string[]) => {
+          try {
+            return await redisService.client.sendCommand(args);
+          } catch (error) {
+            console.error('Redis command error in rate limiter:', error);
+            // Return empty result instead of throwing
+            return [];
+          }
+        },
+        prefix, // Custom Redis key prefix
+      }),
+      windowMs,
+      max,
+      message,
+      standardHeaders: true, // Include `RateLimit-*` headers in the response
+      legacyHeaders: false, // Disable `X-RateLimit-*` headers
+      handler: (req: RateLimitRequest, res) => {
+        // Custom handler for rate-limited requests
+        res.status(429).json({
+          error: message,
+          retryAfter: req.rateLimit?.resetTime
+            ? Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000)
+            : undefined,
+        });
       },
-      prefix, // Custom Redis key prefix
-    }),
-    windowMs,
-    max,
-    message,
-    standardHeaders: true, // Include `RateLimit-*` headers in the response
-    legacyHeaders: false, // Disable `X-RateLimit-*` headers
-    handler: (req: RateLimitRequest, res) => {
-      // Custom handler for rate-limited requests
-      res.status(429).json({
-        error: message,
-        retryAfter: req.rateLimit?.resetTime
-          ? Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000)
-          : undefined,
-      });
-    },
-  });
+    });
+  } catch (error) {
+    console.error('Error creating Redis rate limiter:', error);
+    console.warn('Falling back to memory store for rate limiting.');
+    
+    // Use memory store as fallback if Redis store creation fails
+    return rateLimit({
+      windowMs,
+      max,
+      message,
+      standardHeaders: true,
+      legacyHeaders: false,
+      handler: (req: RateLimitRequest, res) => {
+        res.status(429).json({
+          error: message,
+          retryAfter: req.rateLimit?.resetTime
+            ? Math.ceil((req.rateLimit.resetTime - Date.now()) / 1000)
+            : undefined,
+        });
+      },
+    });
+  }
 };
